@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/scan': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_API2_URL,
         changeOrigin: true,
         rewrite: path => path.replace(/^\/scan/, '/scan'),
       },
