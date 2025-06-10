@@ -12,6 +12,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/scan/, '/scan'),
       },
+      '/ask': {
+        target: process.env.VITE_API_URL,
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/ask/, '/ask'),
+      },
     },
   }
   
