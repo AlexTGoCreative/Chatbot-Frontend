@@ -180,7 +180,6 @@ const Chatbot = ({ Data, onSelectHistory }) => {
 
   const handleSelectScanHistory = async (entry) => {
     setShowScanDropdown(false);
-    setShowChatHistoryDropdown(false);
 
     try {
       let newScanningData = null;
@@ -231,9 +230,16 @@ const Chatbot = ({ Data, onSelectHistory }) => {
     }
   };
 
-  const handleSelectChatHistory = (entry) => {
+  const handleSelectChatHistory = async (entry) => {
     setShowChatHistoryDropdown(false);
-    setShowScanDropdown(false);
+    
+    if (chatHistory.length > 0) {
+      await handleSaveChatHistory();
+    }
+
+    setChatHistory([]);
+    setLocalData({});
+    setSelectedChatHistoryId(null);
     
     const convertedMessages = entry.messages.map(msg => ({
       role: msg.type === 'user' ? 'user' : 'model',
@@ -246,7 +252,9 @@ const Chatbot = ({ Data, onSelectHistory }) => {
       SandboxData: entry.sandboxData || null,
       UrlScanData: entry.urlData || null,
     });
+    
     setSelectedChatHistoryId(entry._id);
+    
     onSelectHistory?.({
       ScanningData: entry.scanData || null,
       SandboxData: entry.sandboxData || null,
