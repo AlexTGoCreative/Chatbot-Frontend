@@ -575,9 +575,7 @@
   }
 }
 
-/* ===== MOBILE RESPONSIVE STYLES ===== */
 
-/* Tablet styles (768px - 1023px) */
 @media (max-width: 1023px) and (min-width: 768px) {
   #chatbot-toggler {
     bottom: 20px;
@@ -592,7 +590,6 @@
   }
 }
 
-/* Mobile styles (below 768px) */
 @media (max-width: 767px) {
   .container.show-chatbot #chatbot-toggler {
     display: none;
@@ -724,7 +721,6 @@
   }
 }
 
-/* Small mobile (below 480px) */
 @media (max-width: 479px) {
   .chat-body {
     padding: 12px;
@@ -756,7 +752,7 @@
   }
 }
 
-/* Landscape mobile orientation */
+
 @media (max-width: 767px) and (orientation: landscape) {
   .chat-body {
     height: calc(100vh - 100px);
@@ -778,7 +774,7 @@
   }
 }
 
-/* Handle iOS Safari bottom bar */
+
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 767px) {
     .chatbot-popup {
@@ -800,7 +796,7 @@
   }
 }
 
-/* PWA and standalone mode adjustments */
+
 @media (display-mode: standalone) {
   @media (max-width: 767px) {
     .chatbot-popup .chat-header {
@@ -813,7 +809,7 @@
   }
 }
 
-/* Accessibility improvements for mobile */
+
 @media (max-width: 767px) {
   .chat-header button,
   .header-buttons button {
@@ -822,10 +818,10 @@
   }
   
   .chat-form #send-message {
-    min-height: 44px;
-    min-width: 44px;
-    height: 44px;
-    width: 44px;
+    min-height: 32px;
+    min-width: 32px;
+    height: 32px;
+    width: 32px;
   }
   
   #chatbot-toggler {
@@ -834,7 +830,7 @@
   }
 }
 
-/* High contrast mode support */
+
 @media (prefers-contrast: high) {
   .chatbot-popup {
     border: 2px solid #000;
@@ -849,7 +845,6 @@
   }
 }
 
-/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   #chatbot-toggler,
   .chatbot-popup,

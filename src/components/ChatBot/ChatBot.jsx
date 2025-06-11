@@ -119,7 +119,7 @@ const Chatbot = ({ Data, onSelectHistory }) => {
               const message = scanType === 'file' ? "The file was scanned successfully." : "The URL was scanned successfully.";
               const alreadyAdded = prev.some((msg) => msg.text === message);
               if (!alreadyAdded) {
-                return [...prev, { role: "model", text: message }];
+                return [...prev, { role: "assistant", text: message }];
               }
               return prev;
             });
@@ -127,7 +127,7 @@ const Chatbot = ({ Data, onSelectHistory }) => {
           .catch(error => {
             console.error('Failed to save scan history:', error);
             setChatHistory(prev => [...prev, { 
-              role: "model", 
+              role: "assistant", 
               text: "Failed to save scan history.", 
               isError: true 
             }]);
@@ -139,38 +139,64 @@ const Chatbot = ({ Data, onSelectHistory }) => {
     }
   }, [scanCompleted, ScanningData, UrlScanData, userInitiatedScan]);
 
-  const generateBotResponse = async (history) => {
-    const updateHistory = (text, isError = false) => {
-      setChatHistory((prev) => {
-        const newHistory = [...prev];
-        newHistory[newHistory.length - 1] = { role: "model", text, isError };
-        return newHistory;
-      });
-    };
+ const generateBotResponse = async (history) => {
+  // Optional: Sanitize the chat history to ensure each item has a role and text
+  const sanitizedHistory = history.map(msg => ({
+    role: msg.role || "user",
+    text: msg.text || ""
+  }));
 
-    const requestOptions = {
+  // Build the payload to send to the backend following the ChatPayload model
+  const payload = {
+    chat_history: sanitizedHistory,
+    scan_results: ScanningData?.scan_results || null,
+    file_info: ScanningData?.file_info || null,
+    process_info: ScanningData?.process_info || null,
+    sanitized_info: ScanningData?.sanitized || null,
+    sandbox_data: SandboxData || null,
+    url_data: UrlScanData || null,
+  };
+
+  // Optional: log the payload for debugging
+  console.log("Sending payload:", JSON.stringify(payload, null, 2));
+
+  // Function to update chat history with the backend answer
+  const updateHistory = (text, isError = false) => {
+  setChatHistory((prev) => {
+    const newHistory = [...prev];
+    if (newHistory.length > 0) {
+      // Rescrii ultimul mesaj cu rolul assistant si textul raspunsului
+      newHistory[newHistory.length - 1] = { role: "assistant", text, isError };
+    } else {
+      newHistory.push({ role: "assistant", text, isError });
+    }
+    return newHistory;
+  });
+};
+
+
+  try {
+    // Send the payload to the backend
+    const response = await fetch(import.meta.env.VITE_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_history: history,
-        scan_results: ScanningData?.scan_results || null,
-        file_info: ScanningData?.file_info || null,
-        process_info: ScanningData?.process_info || null,
-        sanitized_info: ScanningData?.sanitized || null,
-        sandbox_data: SandboxData || null,
-        url_data: UrlScanData || null,
-      }),
-    };
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
 
-    try {
-      const response = await fetch('/ask', requestOptions);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.error || "Something went wrong!");
-      updateHistory(data.answer.trim());
-    } catch (error) {
-      updateHistory(error.message, true);
+    if (!response.ok) {
+      throw new Error(data?.error?.message || "Something went wrong!");
     }
-  };
+    
+    // Extract and update using the OpenAI response format from the backend
+    console.log("API răspuns:", data);
+
+    const reply = data.answer;
+    updateHistory(reply.trim());
+  } catch (error) {
+    updateHistory(error.message, true);
+  }
+};
 
   useEffect(() => {
     if (chatBodyRef.current) {
@@ -180,6 +206,7 @@ const Chatbot = ({ Data, onSelectHistory }) => {
 
   const handleSelectScanHistory = async (entry) => {
     setShowScanDropdown(false);
+    setShowChatHistoryDropdown(false);
 
     try {
       let newScanningData = null;
@@ -212,17 +239,21 @@ const Chatbot = ({ Data, onSelectHistory }) => {
       });
 
       setChatHistory((prev) => {
-        const message = entry.type === "file" 
-          ? `The file "${entry.displayName}" details was loaded from scan history.`
-          : `The URL "${entry.displayName}" details was loaded from scan history.`;
-        return [...prev, { role: "model", text: message }];
-      });
+  const message = entry.type === "file" 
+    ? "The file was scanned successfully." 
+    : "The URL was scanned successfully.";
+  const alreadyAdded = prev.some((msg) => msg.text === message);
+  if (!alreadyAdded) {
+    return [...prev, { role: "assistant", text: message }];
+  }
+  return prev;
+});
 
     } catch (error) {
       console.error("Error fetching scan data:", error);
       setChatHistory((prev) => {
         return [...prev, { 
-          role: "model", 
+          role: "assistant", 
           text: "Error loading scan data from history.", 
           isError: true 
         }];
@@ -230,21 +261,14 @@ const Chatbot = ({ Data, onSelectHistory }) => {
     }
   };
 
-  const handleSelectChatHistory = async (entry) => {
+  const handleSelectChatHistory = (entry) => {
     setShowChatHistoryDropdown(false);
-    
-    if (chatHistory.length > 0) {
-      await handleSaveChatHistory();
-    }
-
-    setChatHistory([]);
-    setLocalData({});
-    setSelectedChatHistoryId(null);
+    setShowScanDropdown(false);
     
     const convertedMessages = entry.messages.map(msg => ({
-      role: msg.type === 'user' ? 'user' : 'model',
-      text: msg.content
-    }));
+  role: msg.type === 'user' ? 'user' : 'assistant',
+  text: msg.content
+}));
     
     setChatHistory(convertedMessages);
     setLocalData({
@@ -252,9 +276,7 @@ const Chatbot = ({ Data, onSelectHistory }) => {
       SandboxData: entry.sandboxData || null,
       UrlScanData: entry.urlData || null,
     });
-    
     setSelectedChatHistoryId(entry._id);
-    
     onSelectHistory?.({
       ScanningData: entry.scanData || null,
       SandboxData: entry.sandboxData || null,
